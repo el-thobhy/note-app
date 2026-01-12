@@ -1,0 +1,309 @@
+﻿@{
+	ViewData["Title"] = "Home Page";
+}
+
+<!-- Main Content -->
+<div class="container mt-4">
+	<!-- DataTable -->
+	<div class="mt-5">
+		<table id="userTable" class="display" style="width:100%">
+			<thead>
+				<tr>
+					<th>Photo</th>
+					<th>UserName</th>
+					<th>Name</th>
+					<th>Role Group</th>
+					<th>Action</th>
+				</tr>
+			</thead>
+			<tbody></tbody>
+		</table>
+	</div>
+
+</div>
+<!-- Modal Update Role -->
+<div class="modal fade" id="updateRoleModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content p-3">
+            <div class="modal-header">
+                <h5 class="modal-title">Update User Role</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="updateRoleForm">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="Id" id="updateUserId">
+                    <input type="hidden" name="UserName" id="updateUserName">
+                    <div class="mb-3">
+                        <label for="userRoleSelect" class="form-label">Select New Role</label>
+                        <select name="UserRole" class="form-select" id="userRoleSelect" required>
+                            <option value="0">Chose Role</option>
+                            <option value="1">Administrator</option>
+                            <option value="2">User</option>
+                        </select>
+                    </div>
+                    <div class="d-flex justify-content-end">
+                        <button type="submit" class="btn btn-primary">Update Role</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Loading -->
+<div class="modal" id="loadingModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content p-4" style="height: 200px; display: flex; flex-direction: column; justify-content: center; align-items: center;">
+            <div class="spinner-border text-primary" role="status" style="width: 3rem; height: 3rem;"></div>
+            <p class="mt-3 mb-0">Processing...</p>
+        </div>
+    </div>
+</div>
+<!-- Modal Success -->
+<div class="modal fade" id="successModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content p-4">
+            <div class="modal-body text-success fw-bold text-center">
+                Update berhasil.
+            </div>
+            <div class="modal-footer justify-content-center">
+                <button type="button" class="btn btn-success" data-bs-dismiss="modal">OK</button>
+            </div>
+        </div>
+    </div>
+</div>
+<!--Modal Error-->
+<div class="modal fade" id="errorModal" tabindex="-1" aria-labelledby="errorModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content text-center p-4" style="border-left: 5px solid #dc3545;">
+            <div class="modal-header border-0">
+                <h5 class="modal-title text-danger" id="errorModalLabel">Error</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p id="errorMessage">Something went wrong. Please try again.</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Konfirmasi Delete -->
+<div class="modal fade" id="deleteUserModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content p-4">
+            <h5 class="modal-title text-danger mb-3">Confirm Delete</h5>
+            <p>Are you sure you want to delete <strong><span id="deleteUserName"></span></strong>?</p>
+            <div class="d-flex justify-content-end mt-4">
+                <button type="button" class="btn btn-secondary me-2" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-danger" id="confirmDeleteBtn">Delete</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+@section Scripts {
+	<script>
+		$(document).ready(function () {
+
+            $('#userTable').DataTable({
+                paging: true,
+                scrollX: true,
+                searching: true,
+                ordering: true,
+                info: true,
+                autoWidth: false,
+                responsive: false,
+                order: [[0, "desc"]],
+                columnDefs: [
+                    { orderable: false, targets: [4] },
+                    { className: "text-center", targets: "_all" },
+                ],
+
+                language: {
+                    lengthMenu: "Show _MENU_ entries",
+                    zeroRecords: "Data is Empty",
+                    info: "Show _PAGE_ from _PAGES_ pages",
+                    infoEmpty: "Data Not Available",
+                    infoFiltered: "(filter from _MAX_ total data)"
+                },
+
+                ajax: {
+                    url: '/Home/GetAccounts',
+                    type: 'GET',
+                    dataSrc: function (json) {
+                        console.log("Raw JSON:", json);  // 👉 debug di console
+                        return json.data;                // ambil array "data"
+                    }
+                },
+                columns: [
+                    {
+                        data: 'profilePhoto',
+                        title: 'Photo',
+                        render: function (data, type, row, meta) {
+                            // data  -> "profilePhoto" value
+                            // row   -> full row object (punya userName, email, dst.)
+                            // meta  -> { row: indexRow, col: indexCol, settings: ... }
+
+                            let name = 'https://ui-avatars.com/api/?name=' + row.userName +
+                                       '&background=random&color=ffffff&size=40';
+                            let imageUrl = data ? data : name;
+
+                            return `<img src="${imageUrl}" width="40" height="40"
+                                         style="object-fit:cover;border-radius:50%;">`;
+                        }
+                    },
+                    {
+                        data: 'userName',
+                        title: 'Username',
+                        render: function (data, type, row, meta) {
+                            if (type === 'display') {
+                                return `<strong>${data}</strong>`;
+                            }
+                            return data; // untuk sort & filter tetap return plain
+                        }
+                    },
+                    {
+                        data: null,
+                        title: 'Name',
+                        render: function (data, type, row, meta) {
+                            return `${row.firstName} ${row.lastName}`;
+                        }
+                    },
+                    {
+                        data: 'roles',
+                        title: 'Role Group',
+                        render: function (data, type, row, meta) {
+                            return data && data.length ? data.join(', ') : '-';
+                        }
+                    },
+                    {
+                        data: null,
+                        title: 'Actions',
+                        orderable: false,
+                        render: function (data, type, row, meta) {
+                            return `
+                                <div class="btn-group">
+                                    <button class="btn btn-sm btn-primary update-role-btn"
+                                            data-id="${row.id}"
+                                            data-username="${row.userName}"
+                                            data-currentroles='${row.roleGroupId}'>
+                                        Update Role
+                                    </button>
+                                    <button class="btn btn-sm btn-danger"
+                                            data-id="${row.id}"
+                                            data-username="${row.userName}">
+                                        Delete
+                                    </button>
+                                </div>
+                            `;
+                        }
+                    }
+                ]
+            });
+
+		});
+
+        // Saat tombol Update Role diklik
+        $('#userTable').on('click', '.update-role-btn', function () {
+          const userId = $(this).data('id');
+          const userName = $(this).data('username');
+		  const selected = $(this).data('currentroles');
+
+          $('#updateUserId').val(userId);
+          $('#userRoleSelect').val(selected);
+          $('#updateUserName').val(userName);
+
+          $('#updateRoleModal').modal('show');
+        });
+
+        // Saat form disubmit
+        $('#updateRoleForm').on('submit', function (e) {
+          e.preventDefault();
+
+          const userId = $('#updateUserId').val();
+          const userName = $('#updateUserName').val();
+          const selectedRole = $('#userRoleSelect').val();
+          var formData = {
+              id: parseInt(userId),
+              userName: userName,
+              userRole: parseInt(selectedRole)
+          }
+          var token = $('input[name="__RequestVerificationToken"]').val();
+
+          // Show loading
+          $('#updateRoleModal').modal('hide');
+          $('#loadingModal').modal('show');
+
+          $.ajax({
+            url: '/Home/UpdateUserRole',
+            method: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify(formData),
+            headers: {
+                'RequestVerificationToken': token,
+            },
+            success: function (res) {
+              $('#loadingModal').modal('hide');
+              $('#successModal .modal-body').text('Role updated successfully!');
+              $('#successModal').modal('show');
+                setTimeout(function () {
+                    window.location.href = "/Home/Index";
+                }, 2000);
+            },
+            error: function (xhr, status, error) {
+                $('#loadingModal').modal('hide');
+                $('#errorMessage').text("Something went wrong while connecting to the server. "+error);
+                $('#errorModal').modal('show');
+            }
+          });
+        });
+
+		// Konfirmasi hapus
+        let deleteUserId = null;
+        let deleteUserName = "";
+
+        // Saat tombol delete diklik
+        $(document).on('click', '.btn-danger', function () {
+            deleteUserId = $(this).data('id');
+            deleteUserName = $(this).data('username');
+            $('#deleteUserName').text(deleteUserName);
+            $('#deleteUserModal').modal('show');
+        });
+
+        // Saat tombol "Confirm Delete" diklik
+        $('#confirmDeleteBtn').on('click', function () {
+            $('#deleteUserModal').modal('hide');
+            $('#loadingModal').modal('show');
+
+			var formData = {
+				id: parseInt(deleteUserId),
+				userName: deleteUserName
+			}
+
+            $.ajax({
+                url: `/Home/DeleteAccount`,
+				contentType: 'application/json',
+				data: JSON.stringify(formData),
+                type: 'DELETE',
+                success: function (res) {
+                    $('#loadingModal').modal('hide');
+                    $('#successModal .modal-body').text(res.message);
+                    $('#successModal').modal('show');
+                    setTimeout(function () {
+                        window.location.href = "/Home/Index";
+                    }, 2000);
+                },
+                error: function (err) {
+                    $('#loadingModal').modal('hide');
+                    $('#errorModal .modal-body').text(err.responseJSON?.message || 'Something went wrong.');
+                    $('#errorModal').modal('show');
+                }
+            });
+        });
+
+
+	</script>
+
+}
