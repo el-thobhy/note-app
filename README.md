@@ -1,93 +1,138 @@
-# daily_note
+# 📝 Daily Note & Admin Management Dashboard (.NET 8 MVC)
 
+A modern, enterprise-ready web application built with **ASP.NET Core 8.0 MVC** that serves as an **Administrator Management System** and **Real-Time Communication Hub**. Designed to demonstrate clean architecture, robust security, and seamless backend API integration for .NET Developer evaluation.
 
+---
 
-## Getting started
+## 📌 Executive Summary / Overview
 
-To make it easy for you to get started with GitLab, here's a list of recommended next steps.
+This project was built to address two core requirements:
+1. **Administrative User & Role Management**: An intuitive dashboard for managing user accounts, dynamic role permissions, and secure account lifecycle management.
+2. **Real-time Live Chat & Notifications**: Bidirectional messaging using **ASP.NET Core SignalR** with JWT-authenticated WebSocket connections and message persistence.
 
-Already a pro? Just edit this README.md and make it your own. Want to make it easy? [Use the template at the bottom](#editing-this-readme)!
+---
 
-## Add your files
+## 🚀 Key Features
 
-- [ ] [Create](https://docs.gitlab.com/ee/user/project/repository/web_editor.html#create-a-file) or [upload](https://docs.gitlab.com/ee/user/project/repository/web_editor.html#upload-a-file) files
-- [ ] [Add files using the command line](https://docs.gitlab.com/topics/git/add_files/#add-files-to-a-git-repository) or push an existing Git repository with the following command:
+### 1. 🔐 Authentication & Session Security
+- **JWT & Session Hybrid Flow**: Decodes and stores JWT token claims securely in HTTP-only, server-side distributed memory sessions (`IDistributedCache`).
+- **CSRF / XSRF Protection**: Implemented `[ValidateAntiForgeryToken]` on critical state-modifying requests (`POST`, `DELETE`).
+- **Role-Based Access Control (RBAC)**: Dynamic role extraction from JWT claims (`JwtHelper`) to restrict admin-only endpoints and views.
+- **OTP Verification & Account Registration**: Endpoints for email-based OTP verification and account provisioning.
 
+### 2. 👥 User & Role Management Dashboard
+- **Interactive DataTables Integration**: Asynchronous server-side/client-side data rendering with search, sort, and pagination.
+- **Role Elevation / Modification**: Modal-driven updates for user roles with instant UI feedback and error handling.
+- **Safe Account Deletion**: Double-confirmation deletion flow with modal alerts and AJAX dispatch.
+
+### 3. 💬 Real-Time Messaging & Presence (SignalR)
+- **Hub WebSocket Connection**: Auto-reconnecting SignalR connection passing JWT bearer tokens via `accessTokenFactory`.
+- **Online Presence Detection**: Real-time broadcasts when users connect or disconnect (`UserConnected`, `UserDisconnected`).
+- **1-on-1 Private Messaging**: Instant message delivery with conversation history retrieval from upstream microservices.
+
+### 4. 🐳 DevOps & Containerization
+- **Multi-stage Dockerfile**: Optimized .NET 8 runtime & SDK multi-stage build for minimal container footprint and quick deployment.
+
+---
+
+## 🛠️ Tech Stack & Architecture
+
+| Layer | Technology |
+|---|---|
+| **Framework** | .NET 8.0 (C# 12) |
+| **App Model** | ASP.NET Core MVC |
+| **Real-time Communication** | SignalR (WebSockets / Long Polling fallback) |
+| **State & Session** | In-Memory Distributed Cache (`IDistributedCache`), Server-side Cookies |
+| **HTTP Client Architecture** | `IHttpClientFactory` + Typed / Scoped Service Layer (`IAccountService`, `IChatService`) |
+| **Serialization** | `Newtonsoft.Json` / `System.Text.Json` |
+| **Frontend & UI** | Razor Views (`.cshtml`), Bootstrap 5, jQuery DataTables, UI Avatars API |
+| **DevOps / Hosting** | Docker (Linux containers), Azure Container Tools |
+
+---
+
+## 📂 Project Architecture
+
+```plaintext
+├── Controllers/              # MVC Controllers
+│   ├── AuthController.cs     # Login, OTP verification, Logout & Session management
+│   ├── HomeController.cs     # Dashboard & Admin User/Role management actions
+│   └── ChatController.cs     # Live chat routing & Chat history bridge
+├── Services/                 # Business logic & External API Clients (Separation of Concerns)
+│   ├── LoginService.cs       # Auth API communication & OTP handlers
+│   ├── HomeServices.cs       # Account and Role API handlers (IAccountService)
+│   └── ChatServices.cs       # Chat history & Messaging API handlers (IChatService)
+├── ViewModel/                # Strongly-typed Data Transfer & Request/Response Models
+├── Helper/                   # Utility classes (e.g., JwtHelper for claim parsing)
+├── Views/                    # Razor View templates & Layouts
+│   ├── Auth/                 # Login & Registration screens
+│   ├── Home/                 # Account management DataTables view
+│   └── Chat/                 # SignalR Chat room interface
+├── wwwroot/                  # Static assets (CSS, JS, Vendor libraries)
+├── Dockerfile                # Multi-stage Docker build config
+└── Program.cs                # Dependency Injection (DI) container & middleware pipeline
 ```
-cd existing_repo
-git remote add origin https://gitlab.com/yasper/daily_note.git
-git branch -M main
-git push -uf origin main
+
+---
+
+## ⚙️ Design Decisions & Best Practices Highlighted
+
+1. **Dependency Injection & Interface Segregation**:
+   - `IAccountService` and `IChatService` are registered with scoped lifetimes in `Program.cs`.
+   - Controller logic stays lean and testable by delegating external REST calls to dedicated service classes.
+
+2. **Resilient HTTP Communication**:
+   - Uses `IHttpClientFactory` to prevent socket exhaustion issues under high concurrent loads.
+   - Centralized Bearer Token injection from active session headers into outgoing microservice requests.
+
+3. **Security First**:
+   - Session cookies configured with `HttpOnly = true` and `IsEssential = true` to mitigate XSS-based session hijacking.
+   - Antiforgery tokens passed through AJAX headers (`RequestVerificationToken`) to prevent CSRF attacks.
+
+---
+
+## 🚦 Getting Started
+
+### Prerequisites
+- [.NET 8.0 SDK](https://dotnet.microsoft.com/download/dotnet/8.0)
+- [Docker Desktop](https://www.docker.com/) (Optional, for containerized run)
+- Running Backend REST API / SignalR Hub (Target URL configured in `appsettings.json`)
+
+### 1. Configuration
+Set your backend API endpoint in `appsettings.json` or `appsettings.Development.json`:
+```json
+{
+  "ApiUrl": "https://your-backend-api.com",
+  "Logging": {
+    "LogLevel": {
+      "Default": "Information",
+      "Microsoft.AspNetCore": "Warning"
+    }
+  }
+}
 ```
 
-## Integrate with your tools
+### 2. Run Locally via CLI
+```bash
+# Clone the repository
+git clone https://github.com/your-username/note-app.git
 
-- [ ] [Set up project integrations](https://gitlab.com/yasper/daily_note/-/settings/integrations)
+# Navigate to project root
+cd note-app
 
-## Collaborate with your team
+# Restore NuGet dependencies
+dotnet restore
 
-- [ ] [Invite team members and collaborators](https://docs.gitlab.com/ee/user/project/members/)
-- [ ] [Create a new merge request](https://docs.gitlab.com/ee/user/project/merge_requests/creating_merge_requests.html)
-- [ ] [Automatically close issues from merge requests](https://docs.gitlab.com/ee/user/project/issues/managing_issues.html#closing-issues-automatically)
-- [ ] [Enable merge request approvals](https://docs.gitlab.com/ee/user/project/merge_requests/approvals/)
-- [ ] [Set auto-merge](https://docs.gitlab.com/user/project/merge_requests/auto_merge/)
+# Run the application
+dotnet run
+```
+Access the application at `http://localhost:5000` or `https://localhost:5001`.
 
-## Test and Deploy
+### 3. Run with Docker
+```bash
+# Build the Docker image
+docker build -t admin-note-app .
 
-Use the built-in continuous integration in GitLab.
-
-- [ ] [Get started with GitLab CI/CD](https://docs.gitlab.com/ee/ci/quick_start/)
-- [ ] [Analyze your code for known vulnerabilities with Static Application Security Testing (SAST)](https://docs.gitlab.com/ee/user/application_security/sast/)
-- [ ] [Deploy to Kubernetes, Amazon EC2, or Amazon ECS using Auto Deploy](https://docs.gitlab.com/ee/topics/autodevops/requirements.html)
-- [ ] [Use pull-based deployments for improved Kubernetes management](https://docs.gitlab.com/ee/user/clusters/agent/)
-- [ ] [Set up protected environments](https://docs.gitlab.com/ee/ci/environments/protected_environments.html)
-
-***
-
-# Editing this README
-
-When you're ready to make this README your own, just edit this file and use the handy template below (or feel free to structure it however you want - this is just a starting point!). Thanks to [makeareadme.com](https://www.makeareadme.com/) for this template.
-
-## Suggestions for a good README
-
-Every project is different, so consider which of these sections apply to yours. The sections used in the template are suggestions for most open source projects. Also keep in mind that while a README can be too long and detailed, too long is better than too short. If you think your README is too long, consider utilizing another form of documentation rather than cutting out information.
-
-## Name
-Choose a self-explaining name for your project.
-
-## Description
-Let people know what your project can do specifically. Provide context and add a link to any reference visitors might be unfamiliar with. A list of Features or a Background subsection can also be added here. If there are alternatives to your project, this is a good place to list differentiating factors.
-
-## Badges
-On some READMEs, you may see small images that convey metadata, such as whether or not all the tests are passing for the project. You can use Shields to add some to your README. Many services also have instructions for adding a badge.
-
-## Visuals
-Depending on what you are making, it can be a good idea to include screenshots or even a video (you'll frequently see GIFs rather than actual videos). Tools like ttygif can help, but check out Asciinema for a more sophisticated method.
-
-## Installation
-Within a particular ecosystem, there may be a common way of installing things, such as using Yarn, NuGet, or Homebrew. However, consider the possibility that whoever is reading your README is a novice and would like more guidance. Listing specific steps helps remove ambiguity and gets people to using your project as quickly as possible. If it only runs in a specific context like a particular programming language version or operating system or has dependencies that have to be installed manually, also add a Requirements subsection.
-
-## Usage
-Use examples liberally, and show the expected output if you can. It's helpful to have inline the smallest example of usage that you can demonstrate, while providing links to more sophisticated examples if they are too long to reasonably include in the README.
-
-## Support
-Tell people where they can go to for help. It can be any combination of an issue tracker, a chat room, an email address, etc.
-
-## Roadmap
-If you have ideas for releases in the future, it is a good idea to list them in the README.
-
-## Contributing
-State if you are open to contributions and what your requirements are for accepting them.
-
-For people who want to make changes to your project, it's helpful to have some documentation on how to get started. Perhaps there is a script that they should run or some environment variables that they need to set. Make these steps explicit. These instructions could also be useful to your future self.
-
-You can also document commands to lint the code or run tests. These steps help to ensure high code quality and reduce the likelihood that the changes inadvertently break something. Having instructions for running tests is especially helpful if it requires external setup, such as starting a Selenium server for testing in a browser.
-
-## Authors and acknowledgment
-Show your appreciation to those who have contributed to the project.
-
-## License
-For open source projects, say how it is licensed.
-
-## Project status
-If you have run out of energy or time for your project, put a note at the top of the README saying that development has slowed down or stopped completely. Someone may choose to fork your project or volunteer to step in as a maintainer or owner, allowing your project to keep going. You can also make an explicit request for maintainers.
+# Run the container
+docker run -d -p 8080:8080 --name admin-note-app-container admin-note-app
+```
+Access via `http://localhost:8080`.
