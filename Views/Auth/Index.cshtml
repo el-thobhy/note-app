@@ -1,4 +1,4 @@
-﻿@{
+@{
     ViewData["Title"] = "Login";
 }
 
@@ -165,13 +165,20 @@
                     success: function (res) {
                         $('#loadingModal').modal('hide');
                         if (res.success) {
-                            $('#loadingModal').modal('hide');
-                            $('#successMessage').text(res.message);
-                            $('#successModal').modal('show');
+                            if (res.isAdmin === false) {
+                                $('#errorMessage').text(res.message || "Anda tidak memiliki akses sebagai Admin. Mengalihkan...");
+                                $('#errorModal').modal('show');
+                                setTimeout(function () {
+                                    window.location.href = res.redirectUrl || "/Auth/UnauthorizedAccess";
+                                }, 1800);
+                            } else {
+                                $('#successMessage').text(res.message);
+                                $('#successModal').modal('show');
 
-                            setTimeout(function () {
-                                window.location.href = "/Chat/Index";
-                            }, 2000);
+                                setTimeout(function () {
+                                    window.location.href = res.redirectUrl || "/Chat/Index";
+                                }, 1500);
+                            }
                         } else {
                             $('#loadingModal').modal('hide');
                             $('#errorMessage').text(res.message);

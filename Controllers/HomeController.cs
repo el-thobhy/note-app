@@ -31,6 +31,16 @@ namespace Administrator.Controllers
                 return RedirectToAction("Index", "Auth");
             }
             string[]? roles = JwtHelper.GetRolesFromToken(token);
+            bool isAdmin = roles != null && roles.Any(r =>
+                r.Equals("admin", StringComparison.OrdinalIgnoreCase) ||
+                r.Equals("administrator", StringComparison.OrdinalIgnoreCase) ||
+                r.Equals("authorization", StringComparison.OrdinalIgnoreCase));
+
+            if (!isAdmin)
+            {
+                return RedirectToAction("UnauthorizedAccess", "Auth");
+            }
+
             HttpContext.Session.SetString("Roles", string.Join(",", roles ?? new string[] { }));
             return View();
         }

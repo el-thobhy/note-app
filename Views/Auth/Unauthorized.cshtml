@@ -1,0 +1,35 @@
+@{
+    ViewData["Title"] = "Unauthorized Access";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    var userName = Context.Session.GetString("UserName") ?? "User";
+    var roles = Context.Session.GetString("Roles") ?? "None";
+}
+
+<div class="container d-flex align-items-center justify-content-center min-vh-75 mt-5">
+    <div class="card shadow-lg border-0 text-center p-5" style="max-width: 600px; border-radius: 16px;">
+        <div class="mb-4">
+            <div class="d-inline-flex align-items-center justify-content-center bg-danger bg-opacity-10 text-danger rounded-circle" style="width: 90px; height: 90px;">
+                <i class="bi bi-shield-x" style="font-size: 3rem;"></i>
+            </div>
+        </div>
+
+        <h2 class="fw-bold text-danger mb-2">403 - Akses Ditolak</h2>
+        <h5 class="text-secondary mb-3">Unauthorized Access</h5>
+
+        <p class="text-muted mb-4">
+            Halo <strong>@userName</strong>, akun Anda saat ini terdaftar dengan role: <span class="badge bg-secondary">@roles</span>.<br />
+            Halaman ini khusus untuk pengguna dengan hak akses <strong>Administrator</strong>.
+        </p>
+
+        <div class="d-flex justify-content-center gap-3">
+            <form asp-controller="Auth" asp-action="Logout" method="post" class="m-0">
+                <button type="submit" class="btn btn-outline-danger px-4 py-2">
+                    <i class="bi bi-box-arrow-right me-1"></i> Logout & Ganti Akun
+                </button>
+            </form>
+            <a asp-controller="Auth" asp-action="Index" class="btn btn-primary px-4 py-2">
+                <i class="bi bi-arrow-left me-1"></i> Ke Halaman Login
+            </a>
+        </div>
+    </div>
+</div>

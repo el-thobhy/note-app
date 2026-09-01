@@ -1,4 +1,5 @@
-﻿using Administrator.Services;
+using Administrator.Helper;
+using Administrator.Services;
 using Administrator.ViewModel;
 using Microsoft.AspNetCore.Mvc;
 
@@ -16,6 +17,12 @@ namespace Administrator.Controllers
         {
             return View();
         }
+
+        public IActionResult UnauthorizedAccess()
+        {
+            return View("Unauthorized");
+        }
+
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> SigningIn([FromBody] LoginRequestViewModel model)
@@ -35,16 +42,37 @@ namespace Administrator.Controllers
                     });
                 }
 
-                // Simpan token ke session jika perlu
+                // Ambil roles dari token / response
+                var roles = JwtHelper.GetRolesFromToken(response.Data.Token) ?? response.Data.Roles?.ToArray() ?? Array.Empty<string>();
+                bool isAdmin = roles.Any(r => 
+                    r.Equals("admin", StringComparison.OrdinalIgnoreCase) || 
+                    r.Equals("administrator", StringComparison.OrdinalIgnoreCase) || 
+                    r.Equals("authorization", StringComparison.OrdinalIgnoreCase));
+
+                // Simpan session
                 HttpContext.Session.SetString("Token", response.Data.Token ?? "");
                 HttpContext.Session.SetString("UserName", response.Data.UserName ?? "");
                 HttpContext.Session.SetString("Avatar", response.Data.ProfilePhoto ?? "");
                 HttpContext.Session.SetString("FullName", (response.Data.FirstName + " " + response.Data.LastName) ?? "");
+                HttpContext.Session.SetString("Roles", string.Join(",", roles));
 
-                // Kembalikan respons sukses
+                if (!isAdmin)
+                {
+                    return Json(new
+                    {
+                        success = true,
+                        isAdmin = false,
+                        redirectUrl = "/Auth/UnauthorizedAccess",
+                        message = "Akun Anda bukan Admin. Mengalihkan ke halaman unauthorized..."
+                    });
+                }
+
+                // Kembalikan respons sukses untuk admin
                 return Json(new
                 {
                     success = true,
+                    isAdmin = true,
+                    redirectUrl = "/Chat/Index",
                     message = "Login successful. Welcome, " + response.Data.FirstName + "!"
                 });
             }
